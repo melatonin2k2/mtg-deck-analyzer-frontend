@@ -86,14 +86,14 @@ function App() {
           <h2>Analysis Results</h2>
           <p>
             <strong>Favorable Matchups:</strong>{" "}
-            {(result.favorable ?? []).length > 0
-              ? (result.favorable ?? []).join(", ")
+            {Array.isArray(result.favorable) && result.favorable.length > 0
+              ? result.favorable.join(", ")
               : "None"}
           </p>
           <p>
             <strong>Challenging Matchups:</strong>{" "}
-            {(result.challenging ?? []).length > 0
-              ? (result.challenging ?? []).join(", ")
+            {Array.isArray(result.challenging) && result.challenging.length > 0
+              ? result.challenging.join(", ")
               : "None"}
           </p>
           <p>

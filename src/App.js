@@ -1,49 +1,89 @@
-// src/App.js
 import React, { useState } from "react";
-import "./App.css";
 
 function App() {
   const [decklist, setDecklist] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleAnalyze = async () => {
+  const analyzeDeck = async (decklistText) => {
     setLoading(true);
+    setError(null);
+    setResult(null);
+
     try {
-      const response = await fetch("https://mtg-deck-analyzer-backend.onrender.com/api/analyze-deck", {
+      const response = await fetch("http://localhost:3001/api/analyze-deck", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decklist })
+        body: JSON.stringify({ decklist: decklistText }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to analyze deck");
+      }
 
       const data = await response.json();
       setResult(data);
-    } catch (error) {
-      console.error("Error analyzing deck:", error);
+    } catch (err) {
+      setError(err.message || "Unexpected error");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!decklist.trim()) {
+      setError("Please enter a decklist");
+      return;
+    }
+    analyzeDeck(decklist);
   };
 
   return (
-    <div className="App">
+    <div style={{ maxWidth: 600, margin: "auto", padding: 20, fontFamily: "Arial, sans-serif" }}>
       <h1>MTG Deck Analyzer</h1>
-      <textarea
-        rows="10"
-        cols="50"
-        value={decklist}
-        onChange={(e) => setDecklist(e.target.value)}
-        placeholder="Paste your Standard decklist here..."
-      />
-      <br />
-      <button onClick={handleAnalyze} disabled={loading}>
-        {loading ? "Analyzing..." : "Analyze Deck"}
-      </button>
+      <form onSubmit={handleSubmit}>
+        <textarea
+          rows={12}
+          cols={50}
+          value={decklist}
+          onChange={(e) => setDecklist(e.target.value)}
+          placeholder="Paste your decklist here, one card per line"
+          style={{ width: "100%", fontSize: 16, padding: 8 }}
+        />
+        <br />
+        <button type="submit" disabled={loading} style={{ marginTop: 10, padding: "8px 16px" }}>
+          {loading ? "Analyzing..." : "Analyze Deck"}
+        </button>
+      </form>
+
+      {error && (
+        <div style={{ marginTop: 20, color: "red", fontWeight: "bold" }}>
+          Error: {error}
+        </div>
+      )}
+
       {result && (
-        <div>
-          <h2>Results</h2>
-          <p><strong>Favorable Matchups:</strong> {result.favorable.join(", ")}</p>
-          <p><strong>Challenging Matchups:</strong> {result.challenging.join(", ")}</p>
-          <p><strong>Recommendations:</strong> {result.recommendations}</p>
+        <div style={{ marginTop: 20 }}>
+          <h2>Analysis Results</h2>
+          <p>
+            <strong>Favorable Matchups:</strong>{" "}
+            {(result.favorable ?? []).length > 0
+              ? (result.favorable ?? []).join(", ")
+              : "None"}
+          </p>
+          <p>
+            <strong>Challenging Matchups:</strong>{" "}
+            {(result.challenging ?? []).length > 0
+              ? (result.challenging ?? []).join(", ")
+              : "None"}
+          </p>
+          <p>
+            <strong>Recommendations:</strong>{" "}
+            {result.recommendations || "No recommendations available."}
+          </p>
         </div>
       )}
     </div>

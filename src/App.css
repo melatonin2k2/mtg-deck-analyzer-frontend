@@ -1,0 +1,71 @@
+/* src/App.css */
+
+body {
+  margin: 0;
+  font-family: "Garamond", serif;
+  background: url("https://images.unsplash.com/photo-1596495577886-d920f1fb7238?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80") no-repeat center center fixed;
+  background-size: cover;
+  color: #fffbe6;
+  text-shadow: 1px 1px 2px #000;
+}
+
+.App {
+  text-align: center;
+  padding: 40px;
+  background-color: rgba(0, 0, 0, 0.6);
+  margin: 50px auto;
+  border-radius: 12px;
+  max-width: 800px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+textarea {
+  font-size: 16px;
+  padding: 12px;
+  width: 100%;
+  max-width: 600px;
+  border: 2px solid #d4af37;
+  border-radius: 6px;
+  background-color: #1a1a1a;
+  color: #fffbe6;
+  resize: vertical;
+  margin: 20px auto;
+}
+
+button {
+  padding: 12px 24px;
+  font-size: 16px;
+  background-color: #d4af37;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease-in-out;
+}
+
+button:hover {
+  background-color: #bfa335;
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  background-color: #888;
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+h1, h2 {
+  font-family: "Cinzel", serif;
+  margin-bottom: 20px;
+}
+
+strong {
+  color: #ffd700;
+}
+
+p {
+  font-size: 16px;
+  line-height: 1.6;
+}

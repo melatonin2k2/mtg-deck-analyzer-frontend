@@ -1,64 +1,53 @@
+// src/App.js
 import React, { useState } from "react";
+import "./App.css";
 
-export default function App() {
-  const [deckList, setDeckList] = useState("");
+function App() {
+  const [decklist, setDecklist] = useState("");
+  const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [analysis, setAnalysis] = useState(null);
 
   const handleAnalyze = async () => {
-    if (!deckList.trim()) return;
     setLoading(true);
-    setAnalysis(null);
-
     try {
-      const response = await fetch(
-        "https://your-backend-url.onrender.com/api/analyze-deck",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ decklist: deckList }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to analyze deck");
+      const response = await fetch("https://mtg-deck-analyzer-backend.onrender.com/api/analyze-deck", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decklist })
+      });
 
       const data = await response.json();
-      setAnalysis(data);
+      setResult(data);
     } catch (error) {
-      alert("Error analyzing deck: " + error.message);
-    } finally {
-      setLoading(false);
+      console.error("Error analyzing deck:", error);
     }
+    setLoading(false);
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "auto", padding: 20, fontFamily: "Arial" }}>
-      <h1>Standard MTG Deck Analyzer</h1>
-
+    <div className="App">
+      <h1>MTG Deck Analyzer</h1>
       <textarea
-        rows={10}
-        style={{ width: "100%", fontSize: 16 }}
-        placeholder="Paste your deck list here..."
-        value={deckList}
-        onChange={(e) => setDeckList(e.target.value)}
+        rows="10"
+        cols="50"
+        value={decklist}
+        onChange={(e) => setDecklist(e.target.value)}
+        placeholder="Paste your Standard decklist here..."
       />
-
-      <button
-        onClick={handleAnalyze}
-        disabled={loading || !deckList.trim()}
-        style={{ marginTop: 10, padding: "10px 20px", fontSize: 16 }}
-      >
+      <br />
+      <button onClick={handleAnalyze} disabled={loading}>
         {loading ? "Analyzing..." : "Analyze Deck"}
       </button>
+      {result && (
+        <div>
+          <h2>Results</h2>
+          <p><strong>Favorable Matchups:</strong> {result.favorable.join(", ")}</p>
+          <p><strong>Challenging Matchups:</strong> {result.challenging.join(", ")}</p>
+          <p><strong>Recommendations:</strong> {result.recommendations}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
-      {analysis && (
-        <div style={{ marginTop: 20 }}>
-          <h2>Favorable Matchups</h2>
-          <ul>
-            {analysis.favorable.map((m, i) => (
-              <li key={i}>{m}</li>
-            ))}
-          </ul>
-
-          <h2>Challenging Matchups</h2>
-          <ul>
+export default App;

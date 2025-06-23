@@ -1,109 +1,69 @@
+// frontend/src/App.js (example)
+
 import React, { useState } from "react";
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:3001";
-
-function App() {
+export default function App() {
   const [decklist, setDecklist] = useState("");
-  const [result, setResult] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const analyzeDeck = async (decklistText) => {
+  async function submitDeck() {
     setLoading(true);
     setError(null);
-    setResult(null);
+    setAnalysis(null);
 
     try {
-      const response = await fetch(`${API_URL}/api/analyze-deck`, {
+      const response = await fetch("/api/analyze-deck", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decklist: decklistText }),
+        body: JSON.stringify({ decklist }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Server returned an error");
+        const errData = await response.json();
+        throw new Error(errData.error || "Unknown error");
       }
 
       const data = await response.json();
-      setResult(data);
+      setAnalysis(data);
     } catch (err) {
-      setError(err.message || "Unexpected error");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!decklist.trim()) {
-      setError("Please enter a decklist");
-      return;
-    }
-    analyzeDeck(decklist);
-  };
+  }
 
   return (
-    <div
-      style={{
-        maxWidth: 600,
-        margin: "auto",
-        padding: 20,
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
+    <div className="App">
       <h1>MTG Deck Analyzer</h1>
-      <form onSubmit={handleSubmit}>
-        <textarea
-          rows={12}
-          cols={50}
-          value={decklist}
-          onChange={(e) => setDecklist(e.target.value)}
-          placeholder="Paste your decklist here, one card per line"
-          style={{ width: "100%", fontSize: 16, padding: 8, resize: "vertical", minHeight: 200 }}
-          disabled={loading}
-        />
-        <br />
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ marginTop: 10, padding: "8px 16px" }}
-        >
-          {loading ? "Analyzing..." : "Analyze Deck"}
-        </button>
-      </form>
-
-      {loading && <p style={{ marginTop: 20 }}>Loading analysis...</p>}
-
-      {error && (
-        <div style={{ marginTop: 20, color: "red", fontWeight: "bold" }}>
-          Error: {error}
-        </div>
-      )}
-
-      {result && (
-        <div style={{ marginTop: 20 }}>
-          <h2>Analysis Results</h2>
-          <p>
-            <strong>Favorable Matchups:</strong>{" "}
-            {Array.isArray(result.favorable) && result.favorable.length > 0
-              ? result.favorable.join(", ")
-              : "None"}
-          </p>
-          <p>
-            <strong>Challenging Matchups:</strong>{" "}
-            {Array.isArray(result.challenging) && result.challenging.length > 0
-              ? result.challenging.join(", ")
-              : "None"}
-          </p>
-          <p>
-            <strong>Recommendations:</strong>{" "}
-            {result.recommendations || "No recommendations available."}
-          </p>
+      <textarea
+        rows={15}
+        placeholder="Paste your decklist here"
+        value={decklist}
+        onChange={(e) => setDecklist(e.target.value)}
+      />
+      <br />
+      <button onClick={submitDeck} disabled={loading || !decklist.trim()}>
+        {loading ? "Analyzing..." : "Analyze Deck"}
+      </button>
+      {error && <p style={{ color: "red" }}>Error: {error}</p>}
+      {analysis && (
+        <div className="analysis-results">
+          <h2>Deck Analysis</h2>
+          <p><strong>Archetype:</strong> {analysis.archetype}</p>
+          <p><strong>Mana Curve:</strong></p>
+          <ul>
+            {Object.entries(analysis.manaCurve).map(([cmc, count]) => (
+              <li key={cmc}>CMC {cmc}: {count}</li>
+            ))}
+          </ul>
+          <p><strong>Win Conditions:</strong> {analysis.winConditions.length > 0 ? analysis.winConditions.join(", ") : "None detected"}</p>
+          <p><strong>Favorable Matchups:</strong> {analysis.favorable.join(", ") || "None detected"}</p>
+          <p><strong>Challenging Matchups:</strong> {analysis.challenging.join(", ") || "None detected"}</p>
+          <p><strong>Recommendations:</strong><br />{analysis.recommendations}</p>
         </div>
       )}
     </div>
   );
 }
-
-export default App;

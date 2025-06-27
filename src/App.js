@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 
 function App() {
@@ -11,6 +10,7 @@ function App() {
     setError(null);
     setResult(null);
     setLoading(true);
+
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/analyze-deck`, {
         method: "POST",
@@ -18,9 +18,11 @@ function App() {
         body: JSON.stringify({ decklist }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(errorData || "Unknown error");
+      const contentType = response.headers.get("content-type");
+
+      if (!response.ok || !contentType?.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(text.includes("<!DOCTYPE html") ? "Backend URL is incorrect or unreachable." : text);
       }
 
       const data = await response.json();
@@ -54,8 +56,10 @@ function App() {
         <div style={{ marginTop: "2rem" }}>
           <h2>Archetype: {result.archetype}</h2>
           <p>{result.recommendations}</p>
+
           <h3>Synergies:</h3>
           <ul>{result.synergies?.map((s, i) => <li key={i}>{s}</li>)}</ul>
+
           <h3>Card Roles:</h3>
           <ul>
             {Object.entries(result.cardRoles || {}).map(([card, roles]) => (
@@ -64,6 +68,9 @@ function App() {
               </li>
             ))}
           </ul>
+
+          <h3>Learned Cluster:</h3>
+          <p>{typeof result.learnedCluster === "object" ? JSON.stringify(result.learnedCluster) : result.learnedCluster}</p>
         </div>
       )}
     </div>

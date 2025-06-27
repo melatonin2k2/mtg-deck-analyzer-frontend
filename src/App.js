@@ -12,7 +12,7 @@ function App() {
     setResult(null);
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/analyze-deck`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/analyze-deck`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ decklist }),

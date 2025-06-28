@@ -18,11 +18,9 @@ function App() {
         body: JSON.stringify({ decklist }),
       });
 
-      const contentType = response.headers.get("content-type");
-
-      if (!response.ok || !contentType?.includes("application/json")) {
-        const text = await response.text();
-        throw new Error(text.includes("<!DOCTYPE html") ? "Backend URL is incorrect or unreachable." : text);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Unknown server error");
       }
 
       const data = await response.json();
@@ -36,17 +34,18 @@ function App() {
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
+    <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>
       <h1>MTG Deck Analyzer</h1>
       <textarea
         rows="12"
-        cols="50"
+        cols="60"
         value={decklist}
         onChange={(e) => setDecklist(e.target.value)}
         placeholder="Paste your decklist here..."
+        style={{ width: "100%", padding: "0.5rem", fontFamily: "monospace" }}
       />
       <br />
-      <button onClick={handleSubmit} disabled={loading}>
+      <button onClick={handleSubmit} disabled={loading} style={{ marginTop: "1rem" }}>
         {loading ? "Analyzing..." : "Analyze Deck"}
       </button>
 
@@ -57,8 +56,17 @@ function App() {
           <h2>Archetype: {result.archetype}</h2>
           <p>{result.recommendations}</p>
 
+          <h3>Learned Cluster:</h3>
+          <p>
+            {typeof result.learnedCluster?.cluster === "number"
+              ? `Cluster #${result.learnedCluster.cluster}`
+              : "Unknown"}
+          </p>
+
           <h3>Synergies:</h3>
-          <ul>{result.synergies?.map((s, i) => <li key={i}>{s}</li>)}</ul>
+          <ul>
+            {result.synergies?.map((s, i) => <li key={i}>{s}</li>)}
+          </ul>
 
           <h3>Card Roles:</h3>
           <ul>
@@ -68,9 +76,6 @@ function App() {
               </li>
             ))}
           </ul>
-
-          <h3>Learned Cluster:</h3>
-          <p>{typeof result.learnedCluster === "object" ? JSON.stringify(result.learnedCluster) : result.learnedCluster}</p>
         </div>
       )}
     </div>

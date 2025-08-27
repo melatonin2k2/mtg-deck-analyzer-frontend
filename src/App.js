@@ -242,10 +242,60 @@ You can include quantities (4x, 2x) or just list card names.`}
             <p className="recommendations-text">{result.recommendations}</p>
           </div>
 
-          {result.replacementSuggestions && result.replacementSuggestions.length > 0 && (
-            <div className="replacements-section">
-              <h3>🔄 Suggested Card Replacements</h3>
-              {renderReplacements(result.replacementSuggestions)}
+          {result.sideboard && (
+            <div className="sideboard-section">
+              <h3>🎯 Sideboard Analysis</h3>
+              <div className="sideboard-stats">
+                <div className="stat">
+                  <strong>Sideboard Cards:</strong> {result.sideboard.cardCount}
+                </div>
+                <div className="stat">
+                  <strong>Valid Cards:</strong> {result.sideboard.validCardCount}
+                </div>
+              </div>
+
+              {result.sideboard.purposes && (
+                <div className="sideboard-purposes">
+                  <h4>📋 Sideboard Breakdown</h4>
+                  <div className="purposes-grid">
+                    {Object.entries(result.sideboard.purposes).map(([purpose, cards]) => {
+                      if (cards.length === 0) return null;
+                      return (
+                        <div key={purpose} className="purpose-category">
+                          <h5>{purpose.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h5>
+                          <ul>
+                            {cards.map((card, idx) => (
+                              <li key={idx}>{card}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {result.sideboard.strategy && result.sideboard.strategy.length > 0 && (
+                <div className="sideboard-strategy">
+                  <h4>⚔️ Sideboard Strategy</h4>
+                  <ul>
+                    {result.sideboard.strategy.map((strategy, idx) => (
+                      <li key={idx}>{strategy}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result.sideboard.recommendations && result.sideboard.recommendations.length > 0 && (
+                <div className="sideboard-recommendations">
+                  <h4>💡 Sideboard Recommendations</h4>
+                  <ul>
+                    {result.sideboard.recommendations.map((rec, idx) => (
+                      <li key={idx}>{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 

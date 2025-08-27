@@ -464,11 +464,11 @@ button:disabled {
   background: rgba(0, 0, 0, 0.8);
   padding: 30px;
   border-radius: 15px;
-  border: 2px solid #8B4513; /* Brown border for sideboard */
+  border: 2px solid #8B4513;
 }
 
 .sideboard-section h3 {
-  color: #D2691E; /* Orange-brown color for sideboard */
+  color: #D2691E;
   text-align: center;
   margin: 0 0 20px 0;
   font-size: 1.5rem;
@@ -555,60 +555,4 @@ button:disabled {
   margin: 8px 0;
   border-radius: 5px;
   border-left: 4px solid #D2691E;
-  color: #fffbe6;
-}
-
-/* Responsive adjustments for sideboard */
-@media (max-width: 768px) {
-  .purposes-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .sideboard-stats {
-    grid-template-columns: 1fr;
-  }
-}
-  .App {
-    padding: 10px;
-  }
-  
-  .app-header h1 {
-    font-size: 2rem;
-  }
-  
-  .matchups-section {
-    grid-template-columns: 1fr;
-  }
-  
-  .deck-stats {
-    grid-template-columns: 1fr;
-  }
-  
-  .button-group {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  button {
-    width: 100%;
-    max-width: 300px;
-  }
-}
-
-@media (max-width: 480px) {
-  .curve-bars {
-    gap: 5px;
-  }
-  
-  .curve-bar {
-    width: 30px;
-  }
-  
-  .input-section,
-  .archetype-section,
-  .mana-curve,
-  .recommendations-section,
-  .replacements-section {
-    padding: 20px;
-  }
-}
+  color

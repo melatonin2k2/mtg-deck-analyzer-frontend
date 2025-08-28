@@ -558,23 +558,15 @@ button:disabled {
 }
 
 /* Responsive design */
-/* Mobile responsiveness */
 @media (max-width: 768px) {
-  .App {
-    padding: 10px;
-  }
-  
-
   .app-header h1 {
     font-size: 2rem;
   }
   
-
   .matchups-section {
     grid-template-columns: 1fr;
   }
   
-
   .deck-stats {
     grid-template-columns: 1fr;
   }
@@ -583,62 +575,15 @@ button:disabled {
     grid-template-columns: 1fr;
   }
   
-  .card-types-grid {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  .sideboard-stats {
+    grid-template-columns: 1fr;
   }
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
   .curve-bars {
-    padding: 10px 0;
-    height: 120px;
+    gap: 5px;
   }
-}
-
-.results-section {
-  animation: fadeIn 0.5s ease-out;
-}
-
-.curve-bar:hover {
-  transform: scale(1.1);
-  filter: brightness(1.2);
-}
-
-.synergy-tag:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
-}
+  
   .curve-bar {
     width: 30px;
-  }
-
-/* Loading states */
-.loading-spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 2px solid #d4af37;
-  border-radius: 50%;
-  border-top-color: transparent;
-  animation: spin 1s ease-in-out infinite;
-}
-  button {
-    padding: 12px 20px;
-    font-size: 14px;
-  }
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  .purposes-grid {
-    grid-template-columns: 1fr;
   }
 }

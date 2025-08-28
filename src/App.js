@@ -31,7 +31,12 @@ function App() {
 
       const data = await response.json();
       console.log("Received analysis data:", data); // Debug log
-      setResult(data);
+      console.log("Data structure:", JSON.stringify(data, null, 2)); // Full data structure
+      
+      // Convert any object-like arrays back to proper arrays
+      const cleanedData = cleanDataStructure(data);
+      console.log("Cleaned data:", cleanedData);
+      setResult(cleanedData);
     } catch (err) {
       console.error("Error:", err);
       setError(err.message || "Failed to analyze deck. Please try again.");
@@ -45,20 +50,83 @@ function App() {
     setError(null);
   };
 
+  // Function to clean data structure and convert object-like arrays to proper arrays
+  const cleanDataStructure = (data) => {
+    if (!data || typeof data !== 'object') return data;
+
+    const cleaned = { ...data };
+
+    // Convert manaCurve object to proper object if it has numeric keys
+    if (cleaned.manaCurve && typeof cleaned.manaCurve === 'object') {
+      const curve = {};
+      Object.keys(cleaned.manaCurve).forEach(key => {
+        curve[key] = cleaned.manaCurve[key];
+      });
+      cleaned.manaCurve = curve;
+    }
+
+    // Ensure colors is an array
+    if (cleaned.colors && typeof cleaned.colors === 'object' && !Array.isArray(cleaned.colors)) {
+      cleaned.colors = Object.values(cleaned.colors);
+    }
+
+    // Ensure synergies is an array
+    if (cleaned.synergies && typeof cleaned.synergies === 'object' && !Array.isArray(cleaned.synergies)) {
+      cleaned.synergies = Object.values(cleaned.synergies);
+    }
+
+    // Clean matchups
+    if (cleaned.matchups) {
+      if (cleaned.matchups.favorable && !Array.isArray(cleaned.matchups.favorable)) {
+        cleaned.matchups.favorable = Object.values(cleaned.matchups.favorable);
+      }
+      if (cleaned.matchups.challenging && !Array.isArray(cleaned.matchups.challenging)) {
+        cleaned.matchups.challenging = Object.values(cleaned.matchups.challenging);
+      }
+    }
+
+    // Clean sideboard data
+    if (cleaned.sideboard) {
+      if (cleaned.sideboard.strategy && !Array.isArray(cleaned.sideboard.strategy)) {
+        cleaned.sideboard.strategy = Object.values(cleaned.sideboard.strategy);
+      }
+      if (cleaned.sideboard.recommendations && !Array.isArray(cleaned.sideboard.recommendations)) {
+        cleaned.sideboard.recommendations = Object.values(cleaned.sideboard.recommendations);
+      }
+    }
+
+    // Clean replacement suggestions
+    if (cleaned.replacementSuggestions && !Array.isArray(cleaned.replacementSuggestions)) {
+      cleaned.replacementSuggestions = Object.values(cleaned.replacementSuggestions);
+    }
+
+    return cleaned;
+  };
+
   const renderManaCurve = (manaCurve) => {
     if (!manaCurve || typeof manaCurve !== 'object') return null;
     
-    const curveEntries = Object.entries(manaCurve);
+    // Convert object to entries safely
+    let curveEntries;
+    try {
+      curveEntries = Object.entries(manaCurve).filter(([cmc, count]) => 
+        !isNaN(cmc) && typeof count === 'number'
+      );
+    } catch (e) {
+      console.error("Error processing mana curve:", e);
+      return null;
+    }
+    
     if (curveEntries.length === 0) return null;
     
-    const maxCount = Math.max(...Object.values(manaCurve), 1);
+    const maxCount = Math.max(...curveEntries.map(([, count]) => count), 1);
     
     return (
       <div className="mana-curve">
         <h3>Mana Curve</h3>
         <div className="curve-bars">
           {curveEntries.map(([cmc, count]) => (
-            <div key={cmc} className="curve-bar-container">
+            <div key={`curve-${cmc}`} className="curve-bar-container">
               <div 
                 className="curve-bar" 
                 style={{ 
@@ -77,7 +145,23 @@ function App() {
   };
 
   const renderColors = (colors) => {
-    if (!Array.isArray(colors) || colors.length === 0) {
+    // Ensure we have a valid array
+    let colorArray = [];
+    
+    if (Array.isArray(colors)) {
+      colorArray = colors;
+    } else if (colors && typeof colors === 'object') {
+      // Convert object to array if needed
+      colorArray = Object.values(colors);
+    } else if (typeof colors === 'string') {
+      // Handle single color as string
+      colorArray = [colors];
+    }
+
+    // Filter out any non-string values
+    colorArray = colorArray.filter(color => typeof color === 'string');
+    
+    if (colorArray.length === 0) {
       return <span>Colorless</span>;
     }
     
@@ -91,8 +175,8 @@ function App() {
 
     return (
       <div className="colors">
-        {colors.map((color, index) => (
-          <span key={index} className={`color color-${color}`}>
+        {colorArray.map((color, index) => (
+          <span key={`color-${index}`} className={`color color-${color}`}>
             {colorMap[color]?.symbol || '?'} {colorMap[color]?.name || color}
           </span>
         ))}
@@ -157,7 +241,23 @@ function App() {
   const safeGetArray = (obj, key, defaultValue = []) => {
     if (!obj || typeof obj !== 'object') return defaultValue;
     const value = obj[key];
-    return Array.isArray(value) ? value : defaultValue;
+    
+    // If it's already an array, return it
+    if (Array.isArray(value)) return value;
+    
+    // If it's an object with numeric keys (like {0: 'item1', 1: 'item2'}), convert to array
+    if (value && typeof value === 'object') {
+      const keys = Object.keys(value);
+      const isNumericKeys = keys.every(key => !isNaN(key));
+      if (isNumericKeys && keys.length > 0) {
+        return Object.values(value);
+      }
+    }
+    
+    // If it's a single value, wrap in array
+    if (value != null) return [value];
+    
+    return defaultValue;
   };
 
   const safeGetString = (obj, key, defaultValue = '') => {

@@ -554,4 +554,75 @@ button:disabled {
   padding: 10px 15px;
   margin: 8px 0;
   border-radius: 5px;
-  border-left:
+  border-left: 4px solid #D2691E;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .App {
+    padding: 10px;
+  }
+  
+  .app-header h1 {
+    font-size: 2rem;
+  }
+  
+  .matchups-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .deck-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .purposes-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .card-types-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.results-section {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.curve-bar:hover {
+  transform: scale(1.1);
+  filter: brightness(1.2);
+}
+
+.synergy-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
+}
+
+/* Loading states */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d4af37;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

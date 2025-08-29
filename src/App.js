@@ -347,4 +347,33 @@ Add "Sideboard" on its own line, then list sideboard cards below it.`}
             </div>
           </div>
 
-          {renderManaCurve(result.
+          {renderManaCurve(result.manaCurve)}
+
+          {renderSynergies(result.synergies)}
+
+          {renderMatchups(result.matchups)}
+
+          <div className="recommendations-section">
+            <h3>💡 Recommendations</h3>
+            <p className="recommendations-text">
+              {result.recommendations || "No specific recommendations available."}
+            </p>
+          </div>
+
+          {renderSideboard(result.sideboard)}
+
+          {renderCardTypes(result.cardTypes)}
+
+          {result.replacementSuggestions && (
+            <div className="replacements-section">
+              <h3>🔄 Replacement Suggestions</h3>
+              {renderReplacements(result.replacementSuggestions)}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;

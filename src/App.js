@@ -30,13 +30,8 @@ function App() {
       }
 
       const data = await response.json();
-      console.log("Received analysis data:", data); // Debug log
-      console.log("Data structure:", JSON.stringify(data, null, 2)); // Full data structure
-      
-      // Convert any object-like arrays back to proper arrays
-      const cleanedData = cleanDataStructure(data);
-      console.log("Cleaned data:", cleanedData);
-      setResult(cleanedData);
+      console.log("Received analysis data:", data);
+      setResult(data);
     } catch (err) {
       console.error("Error:", err);
       setError(err.message || "Failed to analyze deck. Please try again.");
@@ -50,83 +45,30 @@ function App() {
     setError(null);
   };
 
-  // Function to clean data structure and convert object-like arrays to proper arrays
-  const cleanDataStructure = (data) => {
-    if (!data || typeof data !== 'object') return data;
-
-    const cleaned = { ...data };
-
-    // Convert manaCurve object to proper object if it has numeric keys
-    if (cleaned.manaCurve && typeof cleaned.manaCurve === 'object') {
-      const curve = {};
-      Object.keys(cleaned.manaCurve).forEach(key => {
-        curve[key] = cleaned.manaCurve[key];
-      });
-      cleaned.manaCurve = curve;
-    }
-
-    // Ensure colors is an array
-    if (cleaned.colors && typeof cleaned.colors === 'object' && !Array.isArray(cleaned.colors)) {
-      cleaned.colors = Object.values(cleaned.colors);
-    }
-
-    // Ensure synergies is an array
-    if (cleaned.synergies && typeof cleaned.synergies === 'object' && !Array.isArray(cleaned.synergies)) {
-      cleaned.synergies = Object.values(cleaned.synergies);
-    }
-
-    // Clean matchups
-    if (cleaned.matchups) {
-      if (cleaned.matchups.favorable && !Array.isArray(cleaned.matchups.favorable)) {
-        cleaned.matchups.favorable = Object.values(cleaned.matchups.favorable);
-      }
-      if (cleaned.matchups.challenging && !Array.isArray(cleaned.matchups.challenging)) {
-        cleaned.matchups.challenging = Object.values(cleaned.matchups.challenging);
-      }
-    }
-
-    // Clean sideboard data
-    if (cleaned.sideboard) {
-      if (cleaned.sideboard.strategy && !Array.isArray(cleaned.sideboard.strategy)) {
-        cleaned.sideboard.strategy = Object.values(cleaned.sideboard.strategy);
-      }
-      if (cleaned.sideboard.recommendations && !Array.isArray(cleaned.sideboard.recommendations)) {
-        cleaned.sideboard.recommendations = Object.values(cleaned.sideboard.recommendations);
-      }
-    }
-
-    // Clean replacement suggestions
-    if (cleaned.replacementSuggestions && !Array.isArray(cleaned.replacementSuggestions)) {
-      cleaned.replacementSuggestions = Object.values(cleaned.replacementSuggestions);
-    }
-
-    return cleaned;
-  };
-
   const renderManaCurve = (manaCurve) => {
     if (!manaCurve || typeof manaCurve !== 'object') return null;
     
-    // Convert object to entries safely
-    let curveEntries;
-    try {
-      curveEntries = Object.entries(manaCurve).filter(([cmc, count]) => 
-        !isNaN(cmc) && typeof count === 'number'
-      );
-    } catch (e) {
-      console.error("Error processing mana curve:", e);
-      return null;
+    // Convert manaCurve object to array of [cmc, count] pairs
+    const curveEntries = Object.entries(manaCurve).map(([cmc, count]) => [
+      parseInt(cmc), 
+      typeof count === 'number' ? count : 0
+    ]);
+    
+    // Sort by CMC and ensure we have entries for 0-7+
+    const fullCurve = [];
+    for (let i = 0; i <= 7; i++) {
+      const found = curveEntries.find(([cmc]) => cmc === i);
+      fullCurve.push([i, found ? found[1] : 0]);
     }
     
-    if (curveEntries.length === 0) return null;
-    
-    const maxCount = Math.max(...curveEntries.map(([, count]) => count), 1);
+    const maxCount = Math.max(...fullCurve.map(([, count]) => count), 1);
     
     return (
       <div className="mana-curve">
         <h3>Mana Curve</h3>
         <div className="curve-bars">
-          {curveEntries.map(([cmc, count]) => (
-            <div key={`curve-${cmc}`} className="curve-bar-container">
+          {fullCurve.map(([cmc, count]) => (
+            <div key={cmc} className="curve-bar-container">
               <div 
                 className="curve-bar" 
                 style={{ 
@@ -134,9 +76,9 @@ function App() {
                   backgroundColor: count > 0 ? '#d4af37' : '#444'
                 }}
               >
-                <span className="curve-count">{count || 0}</span>
+                <span className="curve-count">{count}</span>
               </div>
-              <div className="curve-cmc">{cmc === '7' ? '7+' : cmc}</div>
+              <div className="curve-cmc">{cmc === 7 ? '7+' : cmc}</div>
             </div>
           ))}
         </div>
@@ -145,23 +87,7 @@ function App() {
   };
 
   const renderColors = (colors) => {
-    // Ensure we have a valid array
-    let colorArray = [];
-    
-    if (Array.isArray(colors)) {
-      colorArray = colors;
-    } else if (colors && typeof colors === 'object') {
-      // Convert object to array if needed
-      colorArray = Object.values(colors);
-    } else if (typeof colors === 'string') {
-      // Handle single color as string
-      colorArray = [colors];
-    }
-
-    // Filter out any non-string values
-    colorArray = colorArray.filter(color => typeof color === 'string');
-    
-    if (colorArray.length === 0) {
+    if (!colors || !Array.isArray(colors) || colors.length === 0) {
       return <span>Colorless</span>;
     }
     
@@ -175,9 +101,9 @@ function App() {
 
     return (
       <div className="colors">
-        {colorArray.map((color, index) => (
-          <span key={`color-${index}`} className={`color color-${color}`}>
-            {colorMap[color]?.symbol || '?'} {colorMap[color]?.name || color}
+        {colors.map(color => (
+          <span key={color} className={`color color-${color}`}>
+            {colorMap[color]?.symbol} {colorMap[color]?.name}
           </span>
         ))}
       </div>
@@ -185,7 +111,7 @@ function App() {
   };
 
   const renderReplacements = (replacements) => {
-    if (!Array.isArray(replacements) || replacements.length === 0) {
+    if (!replacements || !Array.isArray(replacements) || replacements.length === 0) {
       return <p className="no-replacements">No replacement suggestions found.</p>;
     }
 
@@ -202,12 +128,12 @@ function App() {
             <div className="replacement-reason">
               <em>Reason:</em> {replacement.reason || 'No reason provided'}
             </div>
-            {Array.isArray(replacement.alternatives) && replacement.alternatives.length > 1 && (
+            {replacement.alternatives && Array.isArray(replacement.alternatives) && replacement.alternatives.length > 0 && (
               <div className="alternatives">
                 <strong>Other options:</strong>
                 <ul>
-                  {replacement.alternatives.slice(1).map((alt, i) => (
-                    <li key={i}>{alt?.name || 'Unknown alternative'}</li>
+                  {replacement.alternatives.slice(0, 3).map((alt, i) => (
+                    <li key={i}>{alt.name || alt}</li>
                   ))}
                 </ul>
               </div>
@@ -218,52 +144,141 @@ function App() {
     );
   };
 
-  const renderMatchupsList = (matchups, type) => {
-    if (!Array.isArray(matchups) || matchups.length === 0) {
-      return <p>No specific {type} matchups identified.</p>;
+  const renderSynergies = (synergies) => {
+    if (!synergies || !Array.isArray(synergies) || synergies.length === 0) {
+      return null;
     }
 
     return (
-      <ul>
-        {matchups.map((matchup, index) => (
-          <li key={index}>{matchup}</li>
-        ))}
-      </ul>
+      <div className="synergies-section">
+        <h3>⚡ Detected Synergies</h3>
+        <div className="synergies-list">
+          {synergies.map((synergy, index) => (
+            <span key={index} className="synergy-tag">
+              {synergy}
+            </span>
+          ))}
+        </div>
+      </div>
     );
   };
 
-  const safeGetValue = (obj, key, defaultValue = 0) => {
-    if (!obj || typeof obj !== 'object') return defaultValue;
-    const value = obj[key];
-    return (typeof value === 'number') ? value : defaultValue;
-  };
-
-  const safeGetArray = (obj, key, defaultValue = []) => {
-    if (!obj || typeof obj !== 'object') return defaultValue;
-    const value = obj[key];
-    
-    // If it's already an array, return it
-    if (Array.isArray(value)) return value;
-    
-    // If it's an object with numeric keys (like {0: 'item1', 1: 'item2'}), convert to array
-    if (value && typeof value === 'object') {
-      const keys = Object.keys(value);
-      const isNumericKeys = keys.every(key => !isNaN(key));
-      if (isNumericKeys && keys.length > 0) {
-        return Object.values(value);
-      }
+  const renderMatchups = (matchups) => {
+    if (!matchups || typeof matchups !== 'object') {
+      return null;
     }
-    
-    // If it's a single value, wrap in array
-    if (value != null) return [value];
-    
-    return defaultValue;
+
+    const favorable = Array.isArray(matchups.favorable) ? matchups.favorable : [];
+    const challenging = Array.isArray(matchups.challenging) ? matchups.challenging : [];
+
+    return (
+      <div className="matchups-section">
+        <div className="matchup-column favorable">
+          <h3>✅ Favorable Matchups</h3>
+          {favorable.length > 0 ? (
+            <ul>
+              {favorable.map((matchup, index) => (
+                <li key={index}>{matchup}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>No specific favorable matchups identified.</p>
+          )}
+        </div>
+
+        <div className="matchup-column challenging">
+          <h3>⚠️ Challenging Matchups</h3>
+          {challenging.length > 0 ? (
+            <ul>
+              {challenging.map((matchup, index) => (
+                <li key={index}>{matchup}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>No specific challenging matchups identified.</p>
+          )}
+        </div>
+      </div>
+    );
   };
 
-  const safeGetString = (obj, key, defaultValue = '') => {
-    if (!obj || typeof obj !== 'object') return defaultValue;
-    const value = obj[key];
-    return (typeof value === 'string') ? value : defaultValue;
+  const renderSideboard = (sideboard) => {
+    if (!sideboard) return null;
+
+    return (
+      <div className="sideboard-section">
+        <h3>🎯 Sideboard Analysis</h3>
+        <div className="sideboard-stats">
+          <div className="stat">
+            <strong>Sideboard Cards:</strong> {sideboard.cardCount || 0}
+          </div>
+          <div className="stat">
+            <strong>Valid Cards:</strong> {sideboard.validCardCount || 0}
+          </div>
+        </div>
+
+        {sideboard.purposes && typeof sideboard.purposes === 'object' && (
+          <div className="sideboard-purposes">
+            <h4>📋 Sideboard Breakdown</h4>
+            <div className="purposes-grid">
+              {Object.entries(sideboard.purposes).map(([purpose, cards]) => {
+                if (!Array.isArray(cards) || cards.length === 0) return null;
+                return (
+                  <div key={purpose} className="purpose-category">
+                    <h5>{purpose.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h5>
+                    <ul>
+                      {cards.map((card, idx) => (
+                        <li key={idx}>{card}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {sideboard.strategy && Array.isArray(sideboard.strategy) && sideboard.strategy.length > 0 && (
+          <div className="sideboard-strategy">
+            <h4>⚔️ Sideboard Strategy</h4>
+            <ul>
+              {sideboard.strategy.map((strategy, idx) => (
+                <li key={idx}>{strategy}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {sideboard.recommendations && Array.isArray(sideboard.recommendations) && sideboard.recommendations.length > 0 && (
+          <div className="sideboard-recommendations">
+            <h4>💡 Sideboard Recommendations</h4>
+            <ul>
+              {sideboard.recommendations.map((rec, idx) => (
+                <li key={idx}>{rec}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderCardTypes = (cardTypes) => {
+    if (!cardTypes || typeof cardTypes !== 'object') return null;
+
+    return (
+      <div className="card-types-section">
+        <h3>📊 Card Type Breakdown</h3>
+        <div className="card-types-grid">
+          {Object.entries(cardTypes).map(([type, count]) => (
+            <div key={type} className="card-type-item">
+              <span className="type-name">{type}</span>
+              <span className="type-count">{count || 0}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -285,7 +300,9 @@ function App() {
 1 Black Lotus
 ...
 
-You can include quantities (4x, 2x) or just list card names.`}
+You can include quantities (4x, 2x) or just list card names.
+
+Add "Sideboard" on its own line, then list sideboard cards below it.`}
         />
         <div className="button-group">
           <button onClick={handleSubmit} disabled={loading}>
@@ -310,141 +327,24 @@ You can include quantities (4x, 2x) or just list card names.`}
         <div className="results-section">
           <div className="archetype-section">
             <h2>🏛️ Deck Archetype</h2>
-            <div className="archetype-name">{safeGetString(result, 'archetype', 'Unknown Archetype')}</div>
+            <div className="archetype-name">{result.archetype || 'Unknown Archetype'}</div>
             <div className="deck-stats">
               <div className="stat">
-                <strong>Total Cards:</strong> {safeGetValue(result, 'totalCards', 'Unknown')}
+                <strong>Total Cards:</strong> {result.totalCards || 'Unknown'}
               </div>
               <div className="stat">
-                <strong>Colors:</strong> {renderColors(safeGetArray(result, 'colors'))}
+                <strong>Colors:</strong> {renderColors(result.colors)}
               </div>
               <div className="stat">
-                <strong>Creatures:</strong> {safeGetValue(result, 'creatureCount')}
+                <strong>Creatures:</strong> {result.creatureCount || 0}
               </div>
               <div className="stat">
-                <strong>Spells:</strong> {safeGetValue(result, 'spellCount')}
+                <strong>Spells:</strong> {result.spellCount || 0}
               </div>
               <div className="stat">
-                <strong>Lands:</strong> {safeGetValue(result, 'landCount')}
+                <strong>Lands:</strong> {result.landCount || 0}
               </div>
             </div>
           </div>
 
-          {renderManaCurve(result.manaCurve)}
-
-          {safeGetArray(result, 'synergies').length > 0 && (
-            <div className="synergies-section">
-              <h3>⚡ Detected Synergies</h3>
-              <div className="synergies-list">
-                {safeGetArray(result, 'synergies').map((synergy, index) => (
-                  <span key={index} className="synergy-tag">
-                    {synergy}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {result.matchups && (
-            <div className="matchups-section">
-              <div className="matchup-column favorable">
-                <h3>✅ Favorable Matchups</h3>
-                {renderMatchupsList(result.matchups.favorable, 'favorable')}
-              </div>
-
-              <div className="matchup-column challenging">
-                <h3>⚠️ Challenging Matchups</h3>
-                {renderMatchupsList(result.matchups.challenging, 'challenging')}
-              </div>
-            </div>
-          )}
-
-          <div className="recommendations-section">
-            <h3>💡 Recommendations</h3>
-            <p className="recommendations-text">{safeGetString(result, 'recommendations', 'No recommendations available.')}</p>
-          </div>
-
-          {result.sideboard && (
-            <div className="sideboard-section">
-              <h3>🎯 Sideboard Analysis</h3>
-              <div className="sideboard-stats">
-                <div className="stat">
-                  <strong>Sideboard Cards:</strong> {safeGetValue(result.sideboard, 'cardCount')}
-                </div>
-                <div className="stat">
-                  <strong>Valid Cards:</strong> {safeGetValue(result.sideboard, 'validCardCount')}
-                </div>
-              </div>
-
-              {result.sideboard.purposes && (
-                <div className="sideboard-purposes">
-                  <h4>📋 Sideboard Breakdown</h4>
-                  <div className="purposes-grid">
-                    {Object.entries(result.sideboard.purposes).map(([purpose, cards]) => {
-                      if (!Array.isArray(cards) || cards.length === 0) return null;
-                      return (
-                        <div key={purpose} className="purpose-category">
-                          <h5>{purpose.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h5>
-                          <ul>
-                            {cards.map((card, idx) => (
-                              <li key={idx}>{card}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {safeGetArray(result.sideboard, 'strategy').length > 0 && (
-                <div className="sideboard-strategy">
-                  <h4>⚔️ Sideboard Strategy</h4>
-                  <ul>
-                    {safeGetArray(result.sideboard, 'strategy').map((strategy, idx) => (
-                      <li key={idx}>{strategy}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {safeGetArray(result.sideboard, 'recommendations').length > 0 && (
-                <div className="sideboard-recommendations">
-                  <h4>💡 Sideboard Recommendations</h4>
-                  <ul>
-                    {safeGetArray(result.sideboard, 'recommendations').map((rec, idx) => (
-                      <li key={idx}>{rec}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-
-          {result.cardTypes && (
-            <div className="card-types-section">
-              <h3>📊 Card Type Breakdown</h3>
-              <div className="card-types-grid">
-                {Object.entries(result.cardTypes).map(([type, count]) => (
-                  <div key={type} className="card-type-item">
-                    <span className="type-name">{type}</span>
-                    <span className="type-count">{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {result.replacementSuggestions && (
-            <div className="replacements-section">
-              <h3>🔄 Card Replacement Suggestions</h3>
-              {renderReplacements(result.replacementSuggestions)}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default App;
+          {renderManaCurve(result.

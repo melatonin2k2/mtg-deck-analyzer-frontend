@@ -248,11 +248,6 @@ You can include quantities (4x, 2x) or just list card names.`}
             </div>
           )}
 
-          <div className="recommendations-section">
-            <h3>💡 Recommendations</h3>
-            <p className="recommendations-text">{mainDeckAnalysis.recommendations || 'No specific recommendations available.'}</p>
-          </div>
-
           {mainDeckAnalysis.cardTypes && (
             <div className="card-types-section">
               <h3>📊 Card Type Breakdown</h3>
@@ -267,9 +262,27 @@ You can include quantities (4x, 2x) or just list card names.`}
             </div>
           )}
 
+          <div className="recommendations-section">
+            <h3>💡 Main Deck Recommendations</h3>
+            <div className="recommendations-text">
+              {mainDeckAnalysis.recommendations ? (
+                mainDeckAnalysis.recommendations.split('. ').map((rec, index) => (
+                  rec.trim() && (
+                    <div key={index} className="recommendation-item">
+                      <span className="recommendation-bullet">•</span>
+                      <span>{rec.trim()}{rec.endsWith('.') ? '' : '.'}</span>
+                    </div>
+                  )
+                ))
+              ) : (
+                <p>No specific recommendations available.</p>
+              )}
+            </div>
+          </div>
+
           {replacementSuggestions && replacementSuggestions.length > 0 && (
             <div className="replacements-section">
-              <h3>🔄 Replacement Suggestions</h3>
+              <h3>🔄 Card Replacement Suggestions</h3>
               {renderReplacements(replacementSuggestions)}
             </div>
           )}

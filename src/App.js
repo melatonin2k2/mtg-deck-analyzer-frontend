@@ -18,7 +18,9 @@ function App() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/analyze-deck`, {
+      // Fix: Use correct API URL without duplicate /api
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/analyze-deck`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ decklist }),
@@ -48,7 +50,7 @@ function App() {
   const renderManaCurve = (manaCurve) => {
     if (!manaCurve) return null;
     
-    const maxCount = Math.max(...Object.values(manaCurve));
+    const maxCount = Math.max(...Object.values(manaCurve), 1);
     
     return (
       <div className="mana-curve">
@@ -59,7 +61,7 @@ function App() {
               <div 
                 className="curve-bar" 
                 style={{ 
-                  height: `${(count / maxCount) * 100}px`,
+                  height: `${Math.max((count / maxCount) * 100, 20)}px`,
                   backgroundColor: count > 0 ? '#d4af37' : '#444'
                 }}
               >
@@ -117,7 +119,7 @@ function App() {
               <div className="alternatives">
                 <strong>Other options:</strong>
                 <ul>
-                  {replacement.alternatives.slice(1).map((alt, i) => (
+                  {replacement.alternatives.map((alt, i) => (
                     <li key={i}>{alt.name}</li>
                   ))}
                 </ul>
@@ -128,11 +130,6 @@ function App() {
       </div>
     );
   };
-
-  // Extract main deck analysis from the result
-  const mainDeckAnalysis = result?.mainDeck || result; // Fallback to legacy structure
-  const sideboardAnalysis = result?.sideboard;
-  const replacementSuggestions = result?.replacementSuggestions;
 
   return (
     <div className="App">
@@ -153,10 +150,10 @@ function App() {
 1 Black Lotus
 ...
 
-You can also include a sideboard:
 Sideboard:
-3 Duress
-2 Negate
+3 Rest in Peace
+2 Supreme Verdict
+...
 
 You can include quantities (4x, 2x) or just list card names.`}
         />
@@ -179,37 +176,37 @@ You can include quantities (4x, 2x) or just list card names.`}
         </div>
       )}
 
-      {mainDeckAnalysis && (
+      {result && (
         <div className="results-section">
           <div className="archetype-section">
-            <h2>🏛️ Main Deck Analysis</h2>
-            <div className="archetype-name">{mainDeckAnalysis.archetype || 'Unknown Archetype'}</div>
+            <h2>🏛️ Deck Archetype</h2>
+            <div className="archetype-name">{result.archetype}</div>
             <div className="deck-stats">
               <div className="stat">
-                <strong>Total Cards:</strong> {mainDeckAnalysis.cardCount || mainDeckAnalysis.totalCards || 'Unknown'}
+                <strong>Total Cards:</strong> {result.totalCards || 'Unknown'}
               </div>
               <div className="stat">
-                <strong>Colors:</strong> {renderColors(mainDeckAnalysis.colors)}
+                <strong>Colors:</strong> {renderColors(result.colors)}
               </div>
               <div className="stat">
-                <strong>Creatures:</strong> {mainDeckAnalysis.creatureCount || 0}
+                <strong>Creatures:</strong> {result.creatureCount || 0}
               </div>
               <div className="stat">
-                <strong>Spells:</strong> {mainDeckAnalysis.spellCount || 0}
+                <strong>Spells:</strong> {result.spellCount || 0}
               </div>
               <div className="stat">
-                <strong>Lands:</strong> {mainDeckAnalysis.landCount || 0}
+                <strong>Lands:</strong> {result.landCount || 0}
               </div>
             </div>
           </div>
 
-          {renderManaCurve(mainDeckAnalysis.manaCurve)}
+          {renderManaCurve(result.manaCurve)}
 
-          {mainDeckAnalysis.synergies && mainDeckAnalysis.synergies.length > 0 && (
+          {result.synergies && result.synergies.length > 0 && (
             <div className="synergies-section">
               <h3>⚡ Detected Synergies</h3>
               <div className="synergies-list">
-                {mainDeckAnalysis.synergies.map((synergy, index) => (
+                {result.synergies.map((synergy, index) => (
                   <span key={index} className="synergy-tag">
                     {synergy}
                   </span>
@@ -218,13 +215,13 @@ You can include quantities (4x, 2x) or just list card names.`}
             </div>
           )}
 
-          {mainDeckAnalysis.matchups && (
+          {result.matchups && (
             <div className="matchups-section">
               <div className="matchup-column favorable">
                 <h3>✅ Favorable Matchups</h3>
-                {mainDeckAnalysis.matchups.favorable && mainDeckAnalysis.matchups.favorable.length > 0 ? (
+                {result.matchups.favorable && result.matchups.favorable.length > 0 ? (
                   <ul>
-                    {mainDeckAnalysis.matchups.favorable.map((matchup, index) => (
+                    {result.matchups.favorable.map((matchup, index) => (
                       <li key={index}>{matchup}</li>
                     ))}
                   </ul>
@@ -235,9 +232,9 @@ You can include quantities (4x, 2x) or just list card names.`}
 
               <div className="matchup-column challenging">
                 <h3>⚠️ Challenging Matchups</h3>
-                {mainDeckAnalysis.matchups.challenging && mainDeckAnalysis.matchups.challenging.length > 0 ? (
+                {result.matchups.challenging && result.matchups.challenging.length > 0 ? (
                   <ul>
-                    {mainDeckAnalysis.matchups.challenging.map((matchup, index) => (
+                    {result.matchups.challenging.map((matchup, index) => (
                       <li key={index}>{matchup}</li>
                     ))}
                   </ul>
@@ -248,62 +245,28 @@ You can include quantities (4x, 2x) or just list card names.`}
             </div>
           )}
 
-          {mainDeckAnalysis.cardTypes && (
-            <div className="card-types-section">
-              <h3>📊 Card Type Breakdown</h3>
-              <div className="card-types-grid">
-                {Object.entries(mainDeckAnalysis.cardTypes).map(([type, count]) => (
-                  <div key={type} className="card-type-item">
-                    <span className="type-name">{type}</span>
-                    <span className="type-count">{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           <div className="recommendations-section">
-            <h3>💡 Main Deck Recommendations</h3>
-            <div className="recommendations-text">
-              {mainDeckAnalysis.recommendations ? (
-                mainDeckAnalysis.recommendations.split('. ').map((rec, index) => (
-                  rec.trim() && (
-                    <div key={index} className="recommendation-item">
-                      <span className="recommendation-bullet">•</span>
-                      <span>{rec.trim()}{rec.endsWith('.') ? '' : '.'}</span>
-                    </div>
-                  )
-                ))
-              ) : (
-                <p>No specific recommendations available.</p>
-              )}
-            </div>
+            <h3>💡 Recommendations</h3>
+            <p className="recommendations-text">{result.recommendations}</p>
           </div>
 
-          {replacementSuggestions && replacementSuggestions.length > 0 && (
-            <div className="replacements-section">
-              <h3>🔄 Card Replacement Suggestions</h3>
-              {renderReplacements(replacementSuggestions)}
-            </div>
-          )}
-
-          {sideboardAnalysis && (
+          {result.sideboard && (
             <div className="sideboard-section">
               <h3>🎯 Sideboard Analysis</h3>
               <div className="sideboard-stats">
                 <div className="stat">
-                  <strong>Sideboard Cards:</strong> {sideboardAnalysis.cardCount}
+                  <strong>Sideboard Cards:</strong> {result.sideboard.cardCount}
                 </div>
                 <div className="stat">
-                  <strong>Valid Cards:</strong> {sideboardAnalysis.validCardCount}
+                  <strong>Valid Cards:</strong> {result.sideboard.validCardCount}
                 </div>
               </div>
 
-              {sideboardAnalysis.purposes && (
+              {result.sideboard.purposes && (
                 <div className="sideboard-purposes">
                   <h4>📋 Sideboard Breakdown</h4>
                   <div className="purposes-grid">
-                    {Object.entries(sideboardAnalysis.purposes).map(([purpose, cards]) => {
+                    {Object.entries(result.sideboard.purposes).map(([purpose, cards]) => {
                       if (cards.length === 0) return null;
                       return (
                         <div key={purpose} className="purpose-category">
@@ -320,27 +283,48 @@ You can include quantities (4x, 2x) or just list card names.`}
                 </div>
               )}
 
-              {sideboardAnalysis.strategy && sideboardAnalysis.strategy.length > 0 && (
+              {result.sideboard.strategy && result.sideboard.strategy.length > 0 && (
                 <div className="sideboard-strategy">
                   <h4>⚔️ Sideboard Strategy</h4>
                   <ul>
-                    {sideboardAnalysis.strategy.map((strategy, idx) => (
+                    {result.sideboard.strategy.map((strategy, idx) => (
                       <li key={idx}>{strategy}</li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              {sideboardAnalysis.recommendations && sideboardAnalysis.recommendations.length > 0 && (
+              {result.sideboard.recommendations && result.sideboard.recommendations.length > 0 && (
                 <div className="sideboard-recommendations">
                   <h4>💡 Sideboard Recommendations</h4>
                   <ul>
-                    {sideboardAnalysis.recommendations.map((rec, idx) => (
+                    {result.sideboard.recommendations.map((rec, idx) => (
                       <li key={idx}>{rec}</li>
                     ))}
                   </ul>
                 </div>
               )}
+            </div>
+          )}
+
+          {result.cardTypes && (
+            <div className="card-types-section">
+              <h3>📊 Card Type Breakdown</h3>
+              <div className="card-types-grid">
+                {Object.entries(result.cardTypes).map(([type, count]) => (
+                  <div key={type} className="card-type-item">
+                    <span className="type-name">{type}</span>
+                    <span className="type-count">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {result.replacementSuggestions && result.replacementSuggestions.length > 0 && (
+            <div className="replacements-section">
+              <h3>🔄 Card Replacement Suggestions</h3>
+              {renderReplacements(result.replacementSuggestions)}
             </div>
           )}
         </div>
